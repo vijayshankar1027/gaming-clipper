@@ -127,12 +127,22 @@ def sanitize_filename(name: str) -> str:
 
 
 COOKIES_FILE = BASE_DIR / "cookies.txt"
+COOKIES_FILE_ALT = BASE_DIR / "cookies.txt.txt"
 
 def get_cookie_opts():
-    """Returns cookiefile option if cookies.txt is present."""
+    """Returns cookiefile and mobile client options to bypass YouTube player restrictions."""
+    opts = {
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "web"]
+            }
+        }
+    }
     if COOKIES_FILE.exists():
-        return {"cookiefile": str(COOKIES_FILE)}
-    return {}
+        opts["cookiefile"] = str(COOKIES_FILE)
+    elif COOKIES_FILE_ALT.exists():
+        opts["cookiefile"] = str(COOKIES_FILE_ALT)
+    return opts
 
 
 def get_video_info(url: str):
@@ -335,7 +345,7 @@ def find_crazy_moments(info: dict, num_clips: int = 5, clip_duration: int = 45):
 def download_clip_section(url: str, start_sec: float, end_sec: float, output_path: str):
     """Download only the exact segment in HD MP4 using yt-dlp."""
     ydl_opts = {
-        "format": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]/best",
+        "format": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
         "download_ranges": yt_dlp.utils.download_range_func(None, [(start_sec, end_sec)]),
         "outtmpl": output_path,
         "force_keyframes_at_cuts": True,
