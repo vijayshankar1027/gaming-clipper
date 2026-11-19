@@ -126,12 +126,22 @@ def sanitize_filename(name: str) -> str:
     return re.sub(r'[\\/*?:"<>|]', "", name).strip()
 
 
+COOKIES_FILE = BASE_DIR / "cookies.txt"
+
+def get_cookie_opts():
+    """Returns cookiefile option if cookies.txt is present."""
+    if COOKIES_FILE.exists():
+        return {"cookiefile": str(COOKIES_FILE)}
+    return {}
+
+
 def get_video_info(url: str):
     """Extract metadata including heatmap and live status from YouTube."""
     ydl_opts = {
         "skip_download": True,
         "quiet": True,
         "no_warnings": True,
+        **get_cookie_opts()
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(url, download=False)
@@ -329,9 +339,10 @@ def download_clip_section(url: str, start_sec: float, end_sec: float, output_pat
         "download_ranges": yt_dlp.utils.download_range_func(None, [(start_sec, end_sec)]),
         "outtmpl": output_path,
         "force_keyframes_at_cuts": True,
-        "quiet": False,
+        "quiet": True,
         "no_warnings": True,
         "overwrites": True,
+        **get_cookie_opts()
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
@@ -348,6 +359,7 @@ def fetch_spoken_subtitles(url: str, clip_start: float, clip_end: float) -> list
         "outtmpl": str(vtt_temp),
         "quiet": True,
         "no_warnings": True,
+        **get_cookie_opts()
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
